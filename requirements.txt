@@ -1,0 +1,21 @@
+# --- API & Synthetic Data Generation ---
+fastapi[all]             # Web framework for the data generator
+uvicorn                  # ASGI server to run the API
+faker                    # Generates realistic logistics names, addresses, and IDs
+pandas                   # Data manipulation for the generator and consumer
+
+# --- Streaming & Storage ---
+confluent-kafka          # Python client for Kafka/Redpanda
+boto3                    # AWS SDK (to talk to your local MinIO S3)
+pyarrow                  # Efficient Parquet file creation for DuckDB
+
+# --- Data Warehouse & Transformation ---
+duckdb                   # The core analytical database engine
+dbt-duckdb               # dbt adapter to run SQL transformations on DuckDB
+
+# --- Orchestration ---
+apache-airflow           # The pipeline scheduler
+
+# --- Visualization & Monitoring ---
+streamlit                # For building the two dashboards quickly
+plotly                   # For the KPI charts and maps
