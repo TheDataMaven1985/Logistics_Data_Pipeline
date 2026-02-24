@@ -20,14 +20,36 @@ con.execute("""
 files = con.execute("SELECT * FROM glob('s3://bronze/*.parquet')").fetchall()
 print(f"Files in bucket: {len(files)}")
 
-# Create a View that points to ALL parquet files in the bronze bucket
-# This is the "Bronze" layer: raw data, no changes.
-con.execute("""
-    CREATE OR REPLACE VIEW raw_logistics AS
-    SELECT *,
-            current_localtimestamp() as ingestion_timestamp
-    FROM read_parquet('s3://bronze/*.parquet');
-""")
+# create the table and load all existing data
+# Subsequent runs: only insert rows that haven't been ingested yet
+table_exists = con.execute("""
+    SELECT COUNT(*) FROM information_schema.tables 
+    WHERE table_name = 'raw_logistics'
+""").fetchone()[0]
 
-print("DuckDB is connected to MinIO. Bronze view 'raw_logistics' created.")
+if not table_exists:
+    print("First run — creating raw_logistics table and loading all data...")
+    con.execute("""
+        CREATE TABLE raw_logistics AS
+        SELECT 
+            src.*,
+            current_localtimestamp() AS ingestion_timestamp
+        FROM read_parquet('s3://bronze/*.parquet') AS src;
+    """)
+    print("Bronze table created.")
+else:
+    print("Table exists — checking for new rows...")
+    new_rows = con.execute("""
+        INSERT INTO raw_logistics
+        SELECT 
+            src.*,
+            current_localtimestamp() AS ingestion_timestamp
+        FROM read_parquet('s3://bronze/*.parquet') AS src
+        WHERE src.event_id NOT IN (
+            SELECT event_id FROM raw_logistics
+        );
+    """).rowcount
+    print(f"{new_rows} new row(s) inserted into raw_logistics.")
+
+print("DuckDB is connected to MinIO. Bronze table 'raw_logistics' created.")
 print(con.execute("SELECT COUNT(*) FROM raw_logistics").fetchall())

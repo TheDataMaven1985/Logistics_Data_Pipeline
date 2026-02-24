@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 def run_dq_checks():
     # Connect to the same database file
     import os
-    # os.makedirs('src/warehouse/data', exist_ok=True)
+    os.makedirs('src/warehouse/data', exist_ok=True)
     con = duckdb.connect('src/warehouse/data/warehouse.duckdb')
     
     # Configure S3 access (same as your init script)
