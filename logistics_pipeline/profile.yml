@@ -1,0 +1,14 @@
+logistics_pipeline:
+  outputs:
+    dev:
+      type: duckdb
+      path: /mnt/c/Users/MY LAPTOP/Logistics_Data_Pipeline/src/warehouse/data/warehouse.duckdb # Path to the file we created earlier
+      extensions:
+        - httpfs
+      settings:
+        s3_endpoint: localhost:9000
+        s3_access_key_id: minioadmin
+        s3_secret_access_key: minioadmin
+        s3_use_ssl: false
+        s3_url_style: path
+  target: dev

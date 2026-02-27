@@ -1,0 +1,192 @@
+versio: 2
+
+models:
+
+    # staging layer
+    - name: stg_logistics_events
+      description: >
+        Cleaned and cast version of raw_logistics_events.
+        Corrupt rows (null event_id / order_id) are removed.
+        All fields are cast to appropriate types and string columns are trimmed.
+      
+      columns:
+        - name: event_id
+          description: "Unique event identifier."
+          tests:
+            - not_null
+            - unique
+        - name: order_id
+          description: "Parent order identifier."
+          tests:
+            - not_null
+        - name: timestamp
+          description: "Event timestamp cast to TIMESTAMP."
+          tests:
+            - not_null
+        - name: ingestion_timestamp
+          description: "Timestamp when the row was processed by dbt."
+          tests:
+            - not_null
+
+    # intermediate layer
+    - name: int_valid_logistics_events
+      description: >
+        Subset of stg_logistics_events passing all 5 DQ rules:
+        positive weight, non-null coordinates, valid estimated delivery,
+        non-null status, and non-null origin/destination.
+      columns:
+        - name: event_id
+          tests:
+            - not_null
+            - unique
+
+    - name: int_invalid_logistics_events
+      description: >
+        Rows from stg_logistics_events that fail at least one DQ rule.
+        invalid_reason holds the highest-priority failure label.
+      columns:
+        - name: event_id
+          tests:
+            - not_null
+        - name: invalid_reason
+          tests:
+            - not_null
+            - accepted_values:
+                values:
+                  - INVALID_WEIGHT
+                  - MISSING_COORDINATES
+                  - INVALID_ESTIMATED_DELIVERY
+                  - MISSING_STATUS
+                  - MISSING_LOCATION
+
+    - name: dq_invalid_delivery_summary
+      description: >
+        Daily aggregation of invalid events: count per reason and
+        percentage of total events for that date.
+      columns:
+        - name: event_date
+          tests:
+            - not_null
+        - name: invalid_reason
+          tests:
+            - not_null
+        - name: invalid_count
+          tests:
+            - not_null
+
+    # dimensional layer
+    - name: dim_order
+      description: "One row per unique order_id with lifecycle timestamps."
+      columns:
+        - name: order_sk
+          tests:
+            - not_null
+            - unique
+        - name: order_id
+          tests:
+            - not_null
+            - unique
+    
+    - name: dim_time
+      description: "One row per unique event timestamp with calendar attributes."
+      columns:
+        - name: time_sk
+          tests:
+            - not_null
+            - unique
+        - name: full_timestamp
+          tests:
+            - not_null
+            - unique
+
+    - name: dim_status
+      description: "Conformed status dimension."
+      columns:
+        - name: status_sk
+          tests:
+            - not_null
+            - unique
+        - name: status_name
+          tests:
+            - not_null
+            - unique
+
+    - name: dim_location
+      description: "Conformed location dimension (origin + destination unioned)."
+      columns:
+        - name: location_sk
+          tests:
+            - not_null
+            - unique
+        - name: location_name
+          tests:
+            - not_null
+            - unique
+
+    - name: dim_carrier
+      description: "Conformed carrier dimension."
+      columns:
+        - name: carrier_sk
+          tests:
+            - not_null
+            - unique
+        - name: carrier_name
+          tests:
+            - not_null
+            - unique
+
+    # fact layer
+    - name: fact_event
+      description: >
+      Grain: one row per valid event_id.
+        Contains all dimension FKs and the is_late_delivery flag.
+      columns:
+      - name: event_sk
+        tests:
+          - not_null
+          - unique
+      - name: event_id
+        tests:
+          - not_null
+          - unique
+      - name: order_sk
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_order')
+              field: order_sk
+      - name: time_sk
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_time')
+              field: time_sk
+      - name: status_sk
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_status')
+              field: status_sk
+      - name: origin_location_sk
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_location')
+              field: location_sk
+      - name: destination_location_sk
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_location')
+              field: location_sk
+      - name: carrier_sk
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_carrier')
+              field: carrier_sk
+      - name: is_late_delivery
+        tests:
+          - not_null
+          - accepted_values:
+              values: [true, false]
