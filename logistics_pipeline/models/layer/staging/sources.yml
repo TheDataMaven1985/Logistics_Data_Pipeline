@@ -1,0 +1,33 @@
+version: 2
+
+sources:
+  - name: logistics_pipeline
+    database: warehouse
+    schema: main
+    description: "Raw logistics event data ingested from the upstream pipeline."
+    tables:
+      - name: raw_logistics
+        description: "One row per logistics event as received from the source system."
+        columns:
+          - name: event_id
+            description: "Unique identifier for each logistics event."
+          - name: order_id
+            description: "The order ID associated with the logistics event."
+          - name: timestamp
+            description: "Event occurrence timestamp (raw string)."
+          - name: status
+            description: "Status of the logistics event (e.g., 'picked_up', 'delivered', 'delayed')."
+          - name: origin
+            description: "The origin location of the logistics event."
+          - name: destination
+            description: "The destination location of the logistics event."
+          - name: carrier_name
+            description: "The carrier responsible for the logistics event."
+          - name: latitude
+            description: "Latitude of the event location (if available)."
+          - name: longitude
+            description: "Longitude of the event location (if available)."
+          - name: weight_kg
+            description: "Weight of the shipment associated with the logistics event (if available)."
+          - name: estimated_delivery
+            description: "Estimated delivery time for the logistics event (if available)."
