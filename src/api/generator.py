@@ -1,4 +1,5 @@
 import json
+import os
 import random
 import uuid
 from datetime import datetime, UTC
@@ -12,8 +13,10 @@ from confluent_kafka import Producer
 fake = Faker()
 
 # --- Kafka Configuration ---
+KAFKA_BOOTSTRAP = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')
+
 conf = {
-    'bootstrap.servers': 'localhost:9092',  # Default for local Kafka
+    'bootstrap.servers': KAFKA_BOOTSTRAP,  # ✅ reads from env var
     'client.id': 'logistics-generator'
 }
 
@@ -118,16 +121,14 @@ async def trigger_event():
 # --- Generate Batch Events ---
 @app.post("/generate-batch", status_code=201)
 async def trigger_batch_events(count: int = 10):
-    """Generate and send multiple events to Kafka."""
     if count < 1 or count > 1000:
         raise HTTPException(status_code=400, detail="count must be between 1 and 1000")
-    
+
     events = []
     try:
         for _ in range(count):
             event = generate_random_event()
             payload = event.model_dump_json().encode('utf-8')
-            
             producer.produce(
                 'logistics-events',
                 key=event.order_id,
@@ -135,9 +136,9 @@ async def trigger_batch_events(count: int = 10):
                 callback=delivery_report
             )
             events.append(event)
-        
-        producer.poll(0)
-        
+
+        producer.flush()  # ✅ wait for all messages to be delivered
+
         return {
             "status": "sent_to_kafka",
             "count": count,
