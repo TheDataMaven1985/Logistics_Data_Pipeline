@@ -79,7 +79,8 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1 
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      AUTO_CREATE_TOPICS_ENABLE = true
     restart: always
 
   minio:
@@ -122,6 +123,7 @@ services:
 
   airflow-scheduler:
     <<: *airflow-common
+    user: "0:0" # run as root to avoid permission issues
     command: scheduler
     restart: always
     volumes:
