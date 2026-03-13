@@ -16,7 +16,7 @@ fake = Faker()
 KAFKA_BOOTSTRAP = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')
 
 conf = {
-    'bootstrap.servers': KAFKA_BOOTSTRAP,  # ✅ reads from env var
+    'bootstrap.servers': KAFKA_BOOTSTRAP,  # reads from env var
     'client.id': 'logistics-generator'
 }
 
@@ -137,7 +137,7 @@ async def trigger_batch_events(count: int = 10):
             )
             events.append(event)
 
-        producer.flush()  # ✅ wait for all messages to be delivered
+        producer.flush()  # wait for all messages to be delivered
 
         return {
             "status": "sent_to_kafka",
